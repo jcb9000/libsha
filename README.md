@@ -69,3 +69,11 @@ void printDigest(const sha::sha32BitDigest_t &digest)
 
 }
 ```
+
+Alternatively, you can use the shautil::toString() method to convert a digest to a string:
+
+```
+std::string dString;
+
+dString = shautil::toString(digest);
+```
