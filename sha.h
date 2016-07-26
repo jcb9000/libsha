@@ -62,4 +62,18 @@ namespace shautil {
 
 	};
 
+
+	/*
+	 * Function to convert the digest into a string
+	 */
+	template<typename D> std::string toString(const D &digest) {
+
+	  std::ostringstream dstream;
+	  dstream << std::hex;
+	  for(auto d : digest) {
+            dstream << d;
+	  }
+	  
+	  return dstream.str();
+	}
 }
