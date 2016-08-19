@@ -33,6 +33,7 @@ SOFTWARE.
 #include <array>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <ios>
 #include <inttypes.h>
 #include <functional>
