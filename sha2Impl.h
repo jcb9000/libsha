@@ -446,7 +446,7 @@ namespace shautil {
 		void finalize() {
 
 		  messageChunk[chunkOffset++] = 0x80;
-		  if(chunkOffset > (ChunkSize - (sizeof(IntType)* 2))) {
+          if(chunkOffset > (std::streamsize)(ChunkSize - (sizeof(IntType)* 2))) {
 		    
 		    while(chunkOffset < ChunkSize)
 		      messageChunk[chunkOffset++] = 0;
@@ -455,7 +455,7 @@ namespace shautil {
 		    chunkOffset = 0;
 		  }
 		  
-		  while(chunkOffset < (ChunkSize - (sizeof(IntType)* 2))) {
+          while(chunkOffset < (std::streamsize)(ChunkSize - (sizeof(IntType)* 2))) {
 		    messageChunk[chunkOffset++] = 0;
 		  }
 
