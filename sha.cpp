@@ -39,89 +39,39 @@ SOFTWARE.
 
 namespace shautil {
 
-	// Return a function object that is set to perform 
-	// SHA-1 processing on a file.
-	sha::sha32BitFunc_t sha::sha1()
-	{
-		auto func = [](const std::string &file) {
+// Return a function object that is set to perform
+// SHA-1 processing on a file.
+sha32BitFunc_t sha1()
+{
+    return SHA2Impl<uint32_t, 64>::sha1();
+}
 
-			SHA2Impl<uint32_t, 64> s;
+// Return a function object that is set to perform
+// SHA256 processing on a file.
+sha32BitFunc_t sha2_256()
+{
+    return SHA2Impl<uint32_t, 64>::sha2_256();
+}
 
-			s.initSHA1(file);
-			s.processFile();
-			s.digest[5] = s.digest[6] = s.digest[7] = 0;
-			return s.digest;
-		};
+// Return a function object that is set to perform
+// SHA224 processing on a file.
+sha32BitFunc_t sha2_224()
+{
+    return SHA2Impl<uint32_t, 64>::sha2_224();
+}
 
-		return func;
+// Return a function object that is set to perform
+// SHA384 processing on a file.
+sha64BitFunc_t sha2_384()
+{
+    return SHA2Impl<uint64_t, 128>::sha2_384();
+}
 
-	}
-
-	// Return a function object that is set to perform
-	// SHA256 processing on a file.
-	sha::sha32BitFunc_t sha::sha2_256()
-	{
-		auto func = [](const std::string &file) {
-
-			SHA2Impl<uint32_t, 64> s;
-
-			s.initSHA256(file);
-			s.processFile();
-			return s.digest;
-		};
-
-		return func;
-	}
-
-	// Return a function object that is set to perform
-	// SHA224 processing on a file.
-	sha::sha32BitFunc_t sha::sha2_224()
-	{
-		auto func = [](const std::string &file) {
-
-			SHA2Impl<uint32_t, 64> s;
-
-			s.initSHA224(file);
-			s.processFile();
-			s.digest[7] = 0;
-			return s.digest;
-		};
-
-		return func;
-	}
-
-	// Return a function object that is set to perform
-	// SHA384 processing on a file.
-	sha::sha64BitFunc_t sha::sha2_384()
-	{
-		auto func = [](const std::string &file) {
-
-			SHA2Impl<uint64_t, 128> s;
-
-			s.initSHA384(file);
-			s.processFile();
-			s.digest[6] = s.digest[7] = 0;
-			return s.digest;
-		};
-
-		return func;
-
-	}
-
-	// Return a function object that is set to perform
-	// SHA512 processing on a file.
-	sha::sha64BitFunc_t sha::sha2_512()
-	{
-		auto func = [](const std::string &file) {
-
-			SHA2Impl<uint64_t, 128> s;
-
-			s.initSHA512(file);
-			s.processFile();
-			return s.digest;
-		};
-
-		return func;
-	}
+// Return a function object that is set to perform
+// SHA512 processing on a file.
+sha64BitFunc_t sha2_512()
+{
+    return SHA2Impl<uint64_t, 128>::sha2_512();
+}
 
 }

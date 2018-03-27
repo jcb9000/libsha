@@ -41,40 +41,34 @@ SOFTWARE.
 
 namespace shautil {
 
-	class sha
-	{
-		sha() {}
+// Public types usable by both the caller and internally.
+using sha32BitDigest_t = std::array<uint32_t, 8>;
+using sha32BitFunc_t   = std::function<sha32BitDigest_t(const std::string &file)>;
+using sha64BitDigest_t = std::array<uint64_t, 8>;
+using sha64BitFunc_t   = std::function<sha64BitDigest_t(const std::string &file)>;
 
-	public:
-		// Public types usable by both the caller and internally.
-		using sha32BitDigest_t = std::array<uint32_t, 8>;
-		using sha32BitFunc_t = std::function<sha32BitDigest_t(const std::string &file)>;
-		using sha64BitDigest_t = std::array<uint64_t, 8>;
-		using sha64BitFunc_t = std::function<sha64BitDigest_t(const std::string &file)>;
-
-		// See sha.cpp for brief descriptions, 
-		// and sha2Impl.h for full descriptions. 
-		static sha32BitFunc_t sha1();
-		static sha32BitFunc_t sha2_256();
-		static sha32BitFunc_t sha2_224();
-		static sha64BitFunc_t sha2_384();
-		static sha64BitFunc_t sha2_512();
+// See sha.cpp for brief descriptions,
+// and sha2Impl.h for full descriptions.
+sha32BitFunc_t sha1();
+sha32BitFunc_t sha2_256();
+sha32BitFunc_t sha2_224();
+sha64BitFunc_t sha2_384();
+sha64BitFunc_t sha2_512();
 
 
-	};
 
+/*
+ * Function to convert the digest into a string
+ */
+template<typename D> std::string toString(const D &digest)
+{
+    std::ostringstream dstream;
+    dstream << std::hex;
+    for(auto d : digest) {
+        dstream << d;
+    }
 
-	/*
-	 * Function to convert the digest into a string
-	 */
-	template<typename D> std::string toString(const D &digest) {
+    return dstream.str();
+}
 
-	  std::ostringstream dstream;
-	  dstream << std::hex;
-	  for(auto d : digest) {
-            dstream << d;
-	  }
-	  
-	  return dstream.str();
-	}
 }
