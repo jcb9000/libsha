@@ -47,7 +47,7 @@ namespace shautil {
 template<typename IntType, int ChunkSize>
 class SHA2Impl
 {
-private:
+    private:
     using SHAProcessDelegate_t = std::function<void()>;
 
     // Computed digest
@@ -60,15 +60,42 @@ private:
 
     // How many bytes are currently in the messageChunk buffer
     std::streamsize         chunkOffset;
-    std::string             fileName;
+    std::filesystem::path   path;
 
     // Delegate function, assigned in initXXXX() to perform the desired SHA algorithm on
     // the message chunk.
     void (SHA2Impl::*processOp)();
 
     // These arrays are defined in the SHA-2 specifications.
-    std::array<uint32_t, 64> k_256;
-    std::array<uint64_t, 80> k_512;
+    std::array<uint32_t, 64> k_256 = { {
+                      0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+                      0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+                      0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+                      0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+                      0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+                      0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+                      0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+                      0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+        } };
+
+    std::array<uint64_t, 80> k_512 = { {
+                      0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc, 0x3956c25bf348b538,
+                      0x59f111f1b605d019, 0x923f82a4af194f9b, 0xab1c5ed5da6d8118, 0xd807aa98a3030242, 0x12835b0145706fbe,
+                      0x243185be4ee4b28c, 0x550c7dc3d5ffb4e2, 0x72be5d74f27b896f, 0x80deb1fe3b1696b1, 0x9bdc06a725c71235,
+                      0xc19bf174cf692694, 0xe49b69c19ef14ad2, 0xefbe4786384f25e3, 0x0fc19dc68b8cd5b5, 0x240ca1cc77ac9c65,
+                      0x2de92c6f592b0275, 0x4a7484aa6ea6e483, 0x5cb0a9dcbd41fbd4, 0x76f988da831153b5, 0x983e5152ee66dfab,
+                      0xa831c66d2db43210, 0xb00327c898fb213f, 0xbf597fc7beef0ee4, 0xc6e00bf33da88fc2, 0xd5a79147930aa725,
+                      0x06ca6351e003826f, 0x142929670a0e6e70, 0x27b70a8546d22ffc, 0x2e1b21385c26c926, 0x4d2c6dfc5ac42aed,
+                      0x53380d139d95b3df, 0x650a73548baf63de, 0x766a0abb3c77b2a8, 0x81c2c92e47edaee6, 0x92722c851482353b,
+                      0xa2bfe8a14cf10364, 0xa81a664bbc423001, 0xc24b8b70d0f89791, 0xc76c51a30654be30, 0xd192e819d6ef5218,
+                      0xd69906245565a910, 0xf40e35855771202a, 0x106aa07032bbd1b8, 0x19a4c116b8d2d0c8, 0x1e376c085141ab53,
+                      0x2748774cdf8eeb99, 0x34b0bcb5e19b48a8, 0x391c0cb3c5c95a63, 0x4ed8aa4ae3418acb, 0x5b9cca4f7763e373,
+                      0x682e6ff3d6b2b8a3, 0x748f82ee5defb2fc, 0x78a5636f43172f60, 0x84c87814a1f0ab72, 0x8cc702081a6439ec,
+                      0x90befffa23631e28, 0xa4506cebde82bde9, 0xbef9a3f7b2c67915, 0xc67178f2e372532b, 0xca273eceea26619c,
+                      0xd186b8c721c0c207, 0xeada7dd6cde0eb1e, 0xf57d4f7fee6ed178, 0x06f067aa72176fba, 0x0a637dc5a2c898a6,
+                      0x113f9804bef90dae, 0x1b710b35131c471b, 0x28db77f523047d84, 0x32caab7b40c72493, 0x3c9ebe0a15c9bebc,
+                      0x431d67c49c100d4c, 0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817
+        } };
 
     // Rotate (not shift) an integer to the left.
     // IntType is either a 32-bit int or a 64-bit int.
@@ -298,7 +325,7 @@ private:
     void finalize() {
 
         messageChunk[chunkOffset++] = 0x80;
-        if(chunkOffset > (std::streamsize)(ChunkSize - (sizeof(IntType)* 2))) {
+        if(chunkOffset > (std::streamsize)(ChunkSize - (sizeof(IntType) * 2))) {
 
             while(chunkOffset < ChunkSize)
                 messageChunk[chunkOffset++] = 0;
@@ -307,7 +334,7 @@ private:
             chunkOffset = 0;
         }
 
-        while(chunkOffset < (std::streamsize)(ChunkSize - (sizeof(IntType)* 2))) {
+        while(chunkOffset < (std::streamsize)(ChunkSize - (sizeof(IntType) * 2))) {
             messageChunk[chunkOffset++] = 0;
         }
 
@@ -319,7 +346,7 @@ private:
         messageChunk[ChunkSize - 4] = (unsigned char)((messageLengthLo & 0x00000000ff000000ULL) >> 24);
         messageChunk[ChunkSize - 3] = (unsigned char)((messageLengthLo & 0x0000000000ff0000ULL) >> 16);
         messageChunk[ChunkSize - 2] = (unsigned char)((messageLengthLo & 0x000000000000ff00ULL) >> 8);
-        messageChunk[ChunkSize - 1] = (unsigned char)(messageLengthLo  & 0x00000000000000ffULL);
+        messageChunk[ChunkSize - 1] = (unsigned char)(messageLengthLo & 0x00000000000000ffULL);
 
         if(ChunkSize == 128) {
             messageChunk[ChunkSize - 16] = (unsigned char)((messageLengthHi & 0xff00000000000000ULL) >> 56);
@@ -329,7 +356,7 @@ private:
             messageChunk[ChunkSize - 12] = (unsigned char)((messageLengthHi & 0x00000000ff000000ULL) >> 24);
             messageChunk[ChunkSize - 11] = (unsigned char)((messageLengthHi & 0x0000000000ff0000ULL) >> 16);
             messageChunk[ChunkSize - 10] = (unsigned char)((messageLengthHi & 0x000000000000ff00ULL) >> 8);
-            messageChunk[ChunkSize - 9]  = (unsigned char)((messageLengthHi & 0x00000000000000ffULL));
+            messageChunk[ChunkSize - 9] = (unsigned char)((messageLengthHi & 0x00000000000000ffULL));
         }
 
         // One last call to process the final block.
@@ -338,9 +365,7 @@ private:
 
     // Initialize the constants (defined by SHA-1) and set the
     // processOp delegate to use the SHA-1 algorithm when processing the data chunk.
-    void initSHA1(const std::string &file) {
-
-        fileName = file;
+    void initSHA1() {
 
         digest[0] = 0x67452301;
         digest[1] = 0xEFCDAB89;
@@ -354,9 +379,7 @@ private:
 
     // Initialize the SHA-256 constants and set the processOp
     // delegate to use the SHA-256 algorithm.
-    void initSHA256(const std::string &file) {
-
-        fileName = file;
+    void initSHA256() {
 
         digest[0] = 0x6a09e667;
         digest[1] = 0xbb67ae85;
@@ -375,9 +398,7 @@ private:
     // delegate to use the SHA-256 algorithm.
     // Note it's not a typo, it's the same algorithm with
     // different constants and a shorter message digest.
-    void initSHA224(const std::string &file) {
-
-        fileName = file;
+    void initSHA224() {
 
         digest[0] = 0xc1059ed8;
         digest[1] = 0x367cd507;
@@ -395,9 +416,7 @@ private:
     // delegate to use the SHA-512 algorithm.
     // SHA-384 is the same as SHA-512 except different starting
     // constants and shorter digest.
-    void initSHA384(const std::string &file) {
-
-        fileName = file;
+    void initSHA384() {
 
         digest[0] = 0xcbbb9d5dc1059ed8ULL;
         digest[1] = 0x629a292a367cd507ULL;
@@ -414,9 +433,7 @@ private:
     // Initialize the SHA-512 constants and set the processOp
     // delegate to use the SHA-512 algorithm.
     // Note also SHA-384 and SHA-512 use 64-bit integers instead of 32-bit.
-    void initSHA512(const std::string &file) {
-
-        fileName = file;
+    void initSHA512() {
 
         digest[0] = 0x6a09e667f3bcc908ULL;
         digest[1] = 0xbb67ae8584caa73bULL;
@@ -436,7 +453,7 @@ private:
     void processFile() {
 
         std::streamsize bytesRead, bitsRead;
-        std::basic_ifstream<char> inStream(fileName, std::ifstream::binary);
+        std::basic_ifstream<char> inStream(path.string(), std::ifstream::binary);
 
         // Apparently ifstream is not buffered at least on MSVC C++ runtime library.
         // The following line increases performance over 10x on Windows
@@ -484,55 +501,27 @@ private:
 
     // Constructor for the implementation. Set up the constants
     // used in the algorithms. These are called out in the SHA-2 specs.
-    SHA2Impl()
+    SHA2Impl() = delete;
+    explicit SHA2Impl(const std::filesystem::path &path) : path{ path }, processOp { nullptr }, messageLengthHi{ 0 }, messageLengthLo{ 0 }, chunkOffset{ 0 }, digest{}, messageChunk{}
     {
-        k_512 = { {
-                      0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc, 0x3956c25bf348b538,
-                      0x59f111f1b605d019, 0x923f82a4af194f9b, 0xab1c5ed5da6d8118, 0xd807aa98a3030242, 0x12835b0145706fbe,
-                      0x243185be4ee4b28c, 0x550c7dc3d5ffb4e2, 0x72be5d74f27b896f, 0x80deb1fe3b1696b1, 0x9bdc06a725c71235,
-                      0xc19bf174cf692694, 0xe49b69c19ef14ad2, 0xefbe4786384f25e3, 0x0fc19dc68b8cd5b5, 0x240ca1cc77ac9c65,
-                      0x2de92c6f592b0275, 0x4a7484aa6ea6e483, 0x5cb0a9dcbd41fbd4, 0x76f988da831153b5, 0x983e5152ee66dfab,
-                      0xa831c66d2db43210, 0xb00327c898fb213f, 0xbf597fc7beef0ee4, 0xc6e00bf33da88fc2, 0xd5a79147930aa725,
-                      0x06ca6351e003826f, 0x142929670a0e6e70, 0x27b70a8546d22ffc, 0x2e1b21385c26c926, 0x4d2c6dfc5ac42aed,
-                      0x53380d139d95b3df, 0x650a73548baf63de, 0x766a0abb3c77b2a8, 0x81c2c92e47edaee6, 0x92722c851482353b,
-                      0xa2bfe8a14cf10364, 0xa81a664bbc423001, 0xc24b8b70d0f89791, 0xc76c51a30654be30, 0xd192e819d6ef5218,
-                      0xd69906245565a910, 0xf40e35855771202a, 0x106aa07032bbd1b8, 0x19a4c116b8d2d0c8, 0x1e376c085141ab53,
-                      0x2748774cdf8eeb99, 0x34b0bcb5e19b48a8, 0x391c0cb3c5c95a63, 0x4ed8aa4ae3418acb, 0x5b9cca4f7763e373,
-                      0x682e6ff3d6b2b8a3, 0x748f82ee5defb2fc, 0x78a5636f43172f60, 0x84c87814a1f0ab72, 0x8cc702081a6439ec,
-                      0x90befffa23631e28, 0xa4506cebde82bde9, 0xbef9a3f7b2c67915, 0xc67178f2e372532b, 0xca273eceea26619c,
-                      0xd186b8c721c0c207, 0xeada7dd6cde0eb1e, 0xf57d4f7fee6ed178, 0x06f067aa72176fba, 0x0a637dc5a2c898a6,
-                      0x113f9804bef90dae, 0x1b710b35131c471b, 0x28db77f523047d84, 0x32caab7b40c72493, 0x3c9ebe0a15c9bebc,
-                      0x431d67c49c100d4c, 0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817 } };
-
-        k_256 = { {
-                      0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-                      0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-                      0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-                      0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-                      0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-                      0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-                      0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-                      0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-                  } };
-
-        messageLengthHi = 0;
-        messageLengthLo = 0;
-        chunkOffset = 0;
     }
 
 
-public:
+    public:
 
     static sha32BitFunc_t sha1()
     {
         // Return a function object that is set to perform
         // SHA-1 processing on a file.
-        auto func = [](const std::string &file) {
-            SHA2Impl<IntType, ChunkSize> s;
-            s.initSHA1(file);
+        auto func = [](const std::filesystem::path &path) {
+            SHA2Impl<IntType, ChunkSize> s(path);
+            shaResult<sha32BitDigest_t> result;
+            s.initSHA1();
             s.processFile();
             s.digest[5] = s.digest[6] = s.digest[7] = 0;
-            return s.digest;
+            result.path = path;
+            result.digest = s.digest;
+            return result;
         };
 
         return func;
@@ -543,11 +532,14 @@ public:
     // SHA256 processing on a file.
     static sha32BitFunc_t sha2_256()
     {
-        auto func = [](const std::string &file) {
-            SHA2Impl<IntType, ChunkSize> s;
-            s.initSHA256(file);
+        auto func = [](const std::filesystem::path &path) {
+            SHA2Impl<IntType, ChunkSize> s(path);
+            shaResult<sha32BitDigest_t> result;
+            s.initSHA256();
             s.processFile();
-            return s.digest;
+            result.path = path;
+            result.digest = s.digest;
+            return result;
         };
 
         return func;
@@ -558,12 +550,15 @@ public:
     // SHA224 processing on a file.
     static sha32BitFunc_t sha2_224()
     {
-        auto func = [](const std::string &file) {
-            SHA2Impl<IntType, ChunkSize> s;
-            s.initSHA224(file);
+        auto func = [](const std::filesystem::path &path) {
+            SHA2Impl<IntType, ChunkSize> s(path);
+            shaResult<sha32BitDigest_t> result;
+            s.initSHA224();
             s.processFile();
             s.digest[7] = 0;
-            return s.digest;
+            result.path = path;
+            result.digest = s.digest;
+            return result;
         };
 
         return func;
@@ -574,14 +569,16 @@ public:
     // SHA384 processing on a file.
     static sha64BitFunc_t sha2_384()
     {
-        auto func = [](const std::string &file) {
+        auto func = [](const std::filesystem::path &path) {
 
-            SHA2Impl<IntType, ChunkSize> s;
-
-            s.initSHA384(file);
+            SHA2Impl<IntType, ChunkSize> s(path);
+            shaResult<sha64BitDigest_t> result;
+            s.initSHA384();
             s.processFile();
             s.digest[6] = s.digest[7] = 0;
-            return s.digest;
+            result.path = path;
+            result.digest = s.digest;
+            return result;
         };
 
         return func;
@@ -592,16 +589,18 @@ public:
     // SHA512 processing on a file.
     static sha64BitFunc_t sha2_512()
     {
-        auto func = [](const std::string &file) {
-            SHA2Impl<IntType, ChunkSize> s;
-            s.initSHA512(file);
+        auto func = [](const std::filesystem::path &path) {
+            SHA2Impl<IntType, ChunkSize> s(path);
+            shaResult<sha64BitDigest_t> result;
+            s.initSHA512();
             s.processFile();
-            return s.digest;
+            result.path = path;
+            result.digest = s.digest;
+            return result;
         };
 
         return func;
     }
-
 };
 
 }

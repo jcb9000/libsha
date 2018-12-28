@@ -36,16 +36,25 @@ SOFTWARE.
 #include <sstream>
 #include <ios>
 #include <inttypes.h>
+#include <filesystem>
 #include <functional>
 
 
 namespace shautil {
 
+// SHA function return type
+template<typename D>
+struct shaResult {
+    std::filesystem::path path;
+    D digest;
+};
+
+
 // Public types usable by both the caller and internally.
 using sha32BitDigest_t = std::array<uint32_t, 8>;
-using sha32BitFunc_t   = std::function<sha32BitDigest_t(const std::string &file)>;
+using sha32BitFunc_t = std::function<shaResult<sha32BitDigest_t>(const std::filesystem::path &path)>;
 using sha64BitDigest_t = std::array<uint64_t, 8>;
-using sha64BitFunc_t   = std::function<sha64BitDigest_t(const std::string &file)>;
+using sha64BitFunc_t = std::function<shaResult<sha64BitDigest_t>(const std::filesystem::path &path)>;
 
 // See sha.cpp for brief descriptions,
 // and sha2Impl.h for full descriptions.
