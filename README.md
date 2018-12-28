@@ -2,7 +2,7 @@
 
 C++  implementation of SHA1 and SHA-2 digest algorithms
 This C++ code will compile with g++, Microsoft C++, and Intel C++ (Version 16 tested). I have not 
-tested it with clang.
+tested it with clang. The code uses std::filesystem, so it requires C++17.
 
 Note: This code does not (yet) account for endian-ness of the host processor. It was written and 
 tested on Intel processors.
